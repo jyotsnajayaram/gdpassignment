@@ -3,6 +3,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 import plotly.express as px
+import pycountry_convert as pc
 
 # Function to scrape GDP data with improved parsing
 @st.cache_data
@@ -28,31 +29,26 @@ def get_gdp_data():
 
     return df
 
-# Function to assign regions to countries
+# Function to automatically assign regions using pycountry_convert
 def assign_regions(df):
-    region_map = {
-        "United States": "North America",
-        "Canada": "North America",
-        "Mexico": "North America",
-        "Brazil": "South America",
-        "Argentina": "South America",
-        "Germany": "Europe",
-        "France": "Europe",
-        "United Kingdom": "Europe",
-        "Italy": "Europe",
-        "Russia": "Europe",
-        "China": "Asia",
-        "Japan": "Asia",
-        "India": "Asia",
-        "South Korea": "Asia",
-        "Indonesia": "Asia",
-        "Australia": "Oceania",
-        "Saudi Arabia": "Middle East",
-        "South Africa": "Africa",
-        "Nigeria": "Africa",
-    }
+    def get_continent(country):
+        try:
+            country_code = pc.country_name_to_country_alpha2(country, cn_name_format="default")
+            continent_code = pc.country_alpha2_to_continent_code(country_code)
 
-    df["Region"] = df["Country/Territory"].map(region_map).fillna("Other")
+            continent_map = {
+                "NA": "North America",
+                "SA": "South America",
+                "EU": "Europe",
+                "AF": "Africa",
+                "AS": "Asia",
+                "OC": "Oceania"
+            }
+            return continent_map.get(continent_code, "Other")
+        except:
+            return "Other"
+
+    df["Region"] = df["Country/Territory"].apply(get_continent)
     return df
 
 # Streamlit UI
