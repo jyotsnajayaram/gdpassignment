@@ -62,7 +62,7 @@ else:
 """
 
 # Save the improved debugging script
-debug_file_path_v3 = "/mnt/data/streamlit_app_debug_v3.py"
+debug_file_path_v3 = "/mnt/data/debug_output.txt"  # Define a valid path
 with open(debug_file_path_v3, "w", encoding="utf-8") as file:
     file.write(improved_debug_script)
 
