@@ -1,5 +1,6 @@
+
 # -*- coding: utf-8 -*-
-"""streamlit_app"""
+"""streamlit_app_debug"""
 
 import streamlit as st
 import pandas as pd
@@ -10,7 +11,7 @@ import re
 
 # Function to scrape GDP data
 @st.cache_data
-def get_gdp_data(source):
+def get_gdp_data():
     url = "https://en.wikipedia.org/wiki/List_of_countries_by_GDP_(nominal)"
     response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
     soup = BeautifulSoup(response.text, 'html.parser')
@@ -37,10 +38,18 @@ def get_gdp_data(source):
     # Convert to DataFrame
     df = pd.DataFrame(rows, columns=headers)
 
+    # Show raw extracted data for debugging
+    st.write("Extracted raw data:", df.head())
+
     # Clean and convert GDP values
-    numeric_cols = ['IMF', 'World Bank', 'United Nations']
-    for col in numeric_cols:
-        df[col] = df[col].str.replace(',', '').str.extract('(\d+)').astype(float)
+    gdp_columns = ['IMF', 'World Bank', 'United Nations']
+    for col in gdp_columns:
+        if col in df.columns:
+            df[col] = df[col].str.replace(',', '').str.extract('(\d+)')
+            df[col] = pd.to_numeric(df[col], errors='coerce')
+
+    # Show cleaned data for debugging
+    st.write("Cleaned data:", df.head())
 
     return df
 
@@ -51,11 +60,14 @@ st.title("Global GDP Visualization")
 source = st.selectbox("Select Data Source", ["IMF", "World Bank", "United Nations"])
 
 # Get data
-df = get_gdp_data(source)
+df = get_gdp_data()
 
-# Plot GDP by region (assuming data contains 'Region' column)
+# Plot GDP by region if data exists
 if not df.empty:
-    fig = px.bar(df, x="Country/Territory", y=source, title=f"GDP by Country ({source})", color="Region", barmode="stack")
-    st.plotly_chart(fig)
+    if source in df.columns:
+        fig = px.bar(df, x="Country/Territory", y=source, title=f"GDP by Country ({source})", barmode="stack")
+        st.plotly_chart(fig)
+    else:
+        st.error(f"Column '{source}' not found in the data.")
 else:
     st.error("No data available.")
