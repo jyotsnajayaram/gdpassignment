@@ -60,6 +60,8 @@ else:
     st.success("Data successfully extracted!")
     st.dataframe(df)  # Display cleaned DataFrame
 """
+import os
+os.makedirs(os.path.dirname(debug_file_path_v3), exist_ok=True)
 
 # Save the improved debugging script
 debug_file_path_v3 = "/mnt/data/debug_output.txt"  # Define a valid path
