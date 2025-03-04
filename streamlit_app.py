@@ -7,9 +7,8 @@ import requests
 from bs4 import BeautifulSoup
 import os
 
-# Define debug file path BEFORE using it
-debug_file_path_v3 = "/mnt/data/debug_output.txt"  # Define a valid path
-os.makedirs(os.path.dirname(debug_file_path_v3), exist_ok=True)
+# Use a writable path in Streamlit Cloud
+debug_file_path_v3 = "/tmp/debug_output.txt"  # Change to /tmp/ to avoid permission issues
 
 # Function to scrape GDP data with improved parsing
 @st.cache_data
@@ -26,8 +25,8 @@ def get_gdp_data():
         st.error("No tables found on Wikipedia page.")
         return pd.DataFrame()
 
-    # Try different table indexes if needed
-    table = tables[0]  # If this fails, change to tables[1] or tables[2]
+    # Select the first table (adjust if needed)
+    table = tables[0]
 
     # Read table into pandas DataFrame
     df = pd.read_html(str(table))[0]
