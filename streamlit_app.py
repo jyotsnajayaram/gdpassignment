@@ -17,23 +17,44 @@ from bs4 import BeautifulSoup
 @st.cache_data
 def get_gdp_data(source):
     url = "https://en.wikipedia.org/wiki/List_of_countries_by_GDP_(nominal)"
-    response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+    response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'}, timeout=10)
     soup = BeautifulSoup(response.text, 'html.parser')
     tables = soup.find_all('table', {'class': 'wikitable'})
-    
-    source_index = {"IMF": 0, "UN": 1, "World Bank": 2}
-    table = tables[source_index[source]]
 
+    if len(tables) == 0:
+        print("No tables found.")
+        return pd.DataFrame()
+
+    table = tables[0]  # Use the only table available
+
+    # Extract column headers
+    headers = [th.text.strip() for th in table.find_all('tr')[0].find_all('th')]
+    print("Table Headers:", headers)  # Debugging
+
+    # Identify the correct column index for the selected source
+    source_mapping = {"IMF": "IMF est.", "UN": "United Nations", "World Bank": "World Bank"}
+    
+    if source not in source_mapping:
+        print(f"Invalid source: {source}")
+        return pd.DataFrame()
+
+    try:
+        source_col_index = headers.index(source_mapping[source])
+    except ValueError:
+        print(f"Column for {source} not found.")
+        return pd.DataFrame()
+
+    # Extract data
     data = []
-    for row in table.find_all('tr')[1:]:
+    for row in table.find_all('tr')[1:]:  # Skip header row
         cols = row.find_all('td')
-        if len(cols) > 1:
+        if len(cols) > source_col_index:  # Ensure we have enough columns
             country = cols[0].text.strip()
-            gdp = cols[1].text.strip().replace(',', '')
+            gdp = cols[source_col_index].text.strip().replace(',', '')
             try:
                 gdp = float(gdp)
             except ValueError:
-                continue
+                continue  # Skip if conversion fails
             data.append({'Country': country, 'GDP': gdp, 'Source': source})
 
     return pd.DataFrame(data)
