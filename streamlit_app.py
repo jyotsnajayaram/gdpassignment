@@ -6,6 +6,7 @@ import pandas as pd
 import plotly.express as px
 import requests
 from bs4 import BeautifulSoup
+import re
 
 # Function to scrape GDP data
 @st.cache_data
@@ -19,28 +20,20 @@ def get_gdp_data(source):
         st.error("No tables found on Wikipedia page.")
         return pd.DataFrame()
 
-    # Identify the correct table by checking headers
-    target_headers = ["Country/Territory", "Forecast", "Estimate"]
-    selected_table = None
+    # Identify the correct table
+    selected_table = tables[0]  # First table is usually the GDP table
 
-    for table in tables:
-        headers = [th.text.strip() for th in table.find_all('tr')[0].find_all('th')]
-        if any(header in headers for header in target_headers):
-            selected_table = table
-            break
+    # Extract headers and clean them (remove reference numbers)
+    raw_headers = [th.text.strip() for th in selected_table.find_all('tr')[0].find_all('th')]
+    headers = [re.sub(r'\[\d+\]', '', h) for h in raw_headers]  # Remove reference numbers like [1][12]
 
-    if selected_table is None:
-        st.error("Could not find the correct GDP table.")
-        return pd.DataFrame()
+    st.write("Table Headers:", headers)  # Debugging output
 
-    headers = [th.text.strip() for th in selected_table.find_all('tr')[0].find_all('th')]
-    st.write("Table Headers:", headers)  # Debugging
-
-    # Corrected source mapping based on Wikipedia's table
+    # Updated source mapping
     source_mapping = {
-        "IMF": "Forecast",
-        "World Bank": "Estimate",
-        "UN": "Estimate"
+        "IMF": "IMF",
+        "World Bank": "World Bank",
+        "UN": "United Nations"
     }
 
     if source not in source_mapping:
@@ -57,14 +50,14 @@ def get_gdp_data(source):
     data = []
     for row in selected_table.find_all('tr')[1:]:  # Skip header row
         cols = row.find_all('td')
-        if len(cols) > source_col_index:  # Ensure we have enough columns
+        if len(cols) > source_col_index:  # Ensure column exists
             country = cols[0].text.strip()
             gdp = cols[source_col_index].text.strip().replace(',', '')
 
             try:
                 gdp = float(gdp)
             except ValueError:
-                continue  # Skip if conversion fails
+                continue  # Skip invalid rows
 
             data.append({'Country': country, 'GDP': gdp, 'Source': source})
 
