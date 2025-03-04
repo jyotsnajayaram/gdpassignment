@@ -33,6 +33,10 @@ def get_gdp_data():
 def assign_regions(df):
     def get_continent(country):
         try:
+            # Remove "World" before processing
+            if country.lower() == "world":
+                return None  # Exclude this row from the dataset
+
             country_code = pc.country_name_to_country_alpha2(country, cn_name_format="default")
             continent_code = pc.country_alpha2_to_continent_code(country_code)
 
@@ -49,6 +53,10 @@ def assign_regions(df):
             return "Other"
 
     df["Region"] = df["Country/Territory"].apply(get_continent)
+    
+    # Drop any rows where Region is None (removes "World")
+    df = df.dropna(subset=["Region"])
+    
     return df
 
 # Streamlit UI
