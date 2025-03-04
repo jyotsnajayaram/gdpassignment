@@ -14,12 +14,13 @@ import requests
 from bs4 import BeautifulSoup
 
 # Function to scrape GDP data
+@st.cache_data
 def get_gdp_data(source):
     url = "https://en.wikipedia.org/wiki/List_of_countries_by_GDP_(nominal)"
-    response = requests.get(url)
+    response = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
     soup = BeautifulSoup(response.text, 'html.parser')
     tables = soup.find_all('table', {'class': 'wikitable'})
-
+    
     source_index = {"IMF": 0, "UN": 1, "World Bank": 2}
     table = tables[source_index[source]]
 
@@ -33,9 +34,9 @@ def get_gdp_data(source):
                 gdp = float(gdp)
             except ValueError:
                 continue
-            data.append([country, gdp])
+            data.append({'Country': country, 'GDP': gdp, 'Source': source})
 
-    return pd.DataFrame(data, columns=["Country", "GDP"])
+    return pd.DataFrame(data)
 
 # Function to scrape region data (moved outside app_code)
 def get_region_data():
