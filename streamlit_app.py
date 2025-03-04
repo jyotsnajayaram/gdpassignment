@@ -25,11 +25,9 @@ def get_gdp_data(source):
 
     # Extract headers and clean them (remove reference numbers)
     raw_headers = [th.text.strip() for th in selected_table.find_all('tr')[0].find_all('th')]
-    headers = [re.sub(r'\[\d+\]', '', h) for h in raw_headers]  # Remove reference numbers like [1][12]
+    headers = [re.sub(r'\[\d+\]', '', h) for h in raw_headers]  # Remove reference numbers
 
-    st.write("Table Headers:", headers)  # Debugging output
-
-    # Updated source mapping
+    # Mapping for column selection
     source_mapping = {
         "IMF": "IMF",
         "World Bank": "World Bank",
@@ -59,12 +57,36 @@ def get_gdp_data(source):
             except ValueError:
                 continue  # Skip invalid rows
 
-            data.append({'Country': country, 'GDP': gdp, 'Source': source})
+            data.append({'Country': country, 'GDP': gdp})
 
-    return pd.DataFrame(data)
+    df = pd.DataFrame(data)
+
+    # Add region mapping
+    region_mapping = {
+        "United States": "North America",
+        "Canada": "North America",
+        "Mexico": "North America",
+        "Germany": "Europe",
+        "United Kingdom": "Europe",
+        "France": "Europe",
+        "Italy": "Europe",
+        "Spain": "Europe",
+        "Russia": "Europe",
+        "China": "Asia",
+        "Japan": "Asia",
+        "India": "Asia",
+        "South Korea": "Asia",
+        "Australia": "Oceania",
+        "Brazil": "South America"
+    }
+
+    df["Region"] = df["Country"].map(region_mapping)
+    df = df.dropna()  # Remove countries without a region
+
+    return df
 
 # Streamlit UI
-st.title("GDP by Country Visualization")
+st.title("GDP by Country & Region Visualization")
 
 # Dropdown for selecting the data source
 source = st.selectbox("Select Data Source", ["IMF", "World Bank", "UN"])
@@ -75,13 +97,18 @@ gdp_data = get_gdp_data(source)
 if gdp_data.empty:
     st.warning("No data available. Please check if the Wikipedia table structure has changed.")
 else:
+    # Aggregate by region
+    region_gdp = gdp_data.groupby(["Region", "Country"], as_index=False).sum()
+
     # Plot stacked bar chart
     fig = px.bar(
-        gdp_data,
-        x="Country",
+        region_gdp,
+        x="Region",
         y="GDP",
-        color="Source",
-        title=f"GDP by Country ({source} Data)",
-        labels={"GDP": "Gross Domestic Product (USD)", "Country": "Country"},
+        color="Country",
+        title=f"Stacked GDP by Region ({source} Data)",
+        labels={"GDP": "Gross Domestic Product (USD)", "Region": "Region"},
+        barmode="stack"
     )
+
     st.plotly_chart(fig)
