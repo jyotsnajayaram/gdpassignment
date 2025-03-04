@@ -31,13 +31,31 @@ def get_gdp_data():
 
 # Function to automatically assign regions using pycountry_convert
 def assign_regions(df):
+    # Manually correct country names that might not be recognized
+    country_name_corrections = {
+        "DR Congo": "Congo, The Democratic Republic of the",
+        "Iran": "Iran, Islamic Republic of",
+        "Venezuela": "Venezuela, Bolivarian Republic of",
+        "Russia": "Russian Federation",
+        "South Korea": "Korea, Republic of",
+        "North Korea": "Korea, Democratic People's Republic of",
+        "Syria": "Syrian Arab Republic",
+        "Tanzania": "Tanzania, United Republic of",
+        "United States": "United States of America",
+        "Vietnam": "Viet Nam"
+    }
+
     def get_continent(country):
         try:
             # Remove "World" before processing
             if country.lower() == "world":
                 return None  # Exclude this row from the dataset
 
-            country_code = pc.country_name_to_country_alpha2(country, cn_name_format="default")
+            # Apply manual corrections if necessary
+            corrected_name = country_name_corrections.get(country, country)
+
+            # Convert corrected country name to Alpha-2 code
+            country_code = pc.country_name_to_country_alpha2(corrected_name, cn_name_format="default")
             continent_code = pc.country_alpha2_to_continent_code(country_code)
 
             continent_map = {
@@ -53,11 +71,12 @@ def assign_regions(df):
             return "Other"
 
     df["Region"] = df["Country/Territory"].apply(get_continent)
-    
+
     # Drop any rows where Region is None (removes "World")
     df = df.dropna(subset=["Region"])
-    
+
     return df
+
 
 # Streamlit UI
 st.title("Global GDP Visualization - Stacked Bar Chart by Region")
