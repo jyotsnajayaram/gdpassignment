@@ -1,13 +1,11 @@
 
 # -*- coding: utf-8 -*-
-"""streamlit_app_debug"""
+"""streamlit_app_debug_v2"""
 
 import streamlit as st
 import pandas as pd
-import plotly.express as px
 import requests
 from bs4 import BeautifulSoup
-import re
 
 # Function to scrape GDP data
 @st.cache_data
@@ -17,57 +15,23 @@ def get_gdp_data():
     soup = BeautifulSoup(response.text, 'html.parser')
     tables = soup.find_all('table', {'class': 'wikitable'})
 
+    # Debug: Show how many tables were found
+    st.write(f"Number of tables found: {len(tables)}")
+
     if not tables:
         st.error("No tables found on Wikipedia page.")
         return pd.DataFrame()
 
-    # Identify the correct table
-    selected_table = tables[0]
+    # Debug: Show raw HTML of the first table
+    st.write("First table HTML:", tables[0].prettify()[:1000])  # Show a preview
 
-    # Extract headers and clean them
-    raw_headers = [th.text.strip() for th in selected_table.find_all('tr')[0].find_all('th')]
-    headers = [re.sub(r'\[\d+\]', '', h) for h in raw_headers]
-
-    # Extract data rows
-    rows = []
-    for row in selected_table.find_all('tr')[1:]:
-        cols = [td.text.strip() for td in row.find_all(['td', 'th'])]
-        if len(cols) == len(headers):  # Ensure row has correct number of columns
-            rows.append(cols)
-
-    # Convert to DataFrame
-    df = pd.DataFrame(rows, columns=headers)
-
-    # Show raw extracted data for debugging
-    st.write("Extracted raw data:", df.head())
-
-    # Clean and convert GDP values
-    gdp_columns = ['IMF', 'World Bank', 'United Nations']
-    for col in gdp_columns:
-        if col in df.columns:
-            df[col] = df[col].str.replace(',', '').str.extract('(\d+)')
-            df[col] = pd.to_numeric(df[col], errors='coerce')
-
-    # Show cleaned data for debugging
-    st.write("Cleaned data:", df.head())
-
-    return df
+    return pd.DataFrame()  # Temporary return to debug
 
 # Streamlit UI
-st.title("Global GDP Visualization")
-
-# Select data source
-source = st.selectbox("Select Data Source", ["IMF", "World Bank", "United Nations"])
+st.title("Global GDP Visualization - Debug Mode")
 
 # Get data
 df = get_gdp_data()
 
-# Plot GDP by region if data exists
-if not df.empty:
-    if source in df.columns:
-        fig = px.bar(df, x="Country/Territory", y=source, title=f"GDP by Country ({source})", barmode="stack")
-        st.plotly_chart(fig)
-    else:
-        st.error(f"Column '{source}' not found in the data.")
-else:
-    st.error("No data available.")
+if df.empty:
+    st.error("No data extracted. Check debugging info above.")
