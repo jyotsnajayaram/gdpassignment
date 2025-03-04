@@ -68,3 +68,4 @@ with open(debug_file_path_v3, "w", encoding="utf-8") as file:
 
 # Return the new debug script file path for the user
 debug_file_path_v3
+
