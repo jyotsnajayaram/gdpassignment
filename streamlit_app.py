@@ -60,6 +60,12 @@ st.title("Global GDP Visualization - Stacked Bar Chart by Region")
 
 df = get_gdp_data()
 
+if df.empty:
+    st.error("No data extracted. Check debugging info above.")
+else:
+    df = assign_regions(df)  # Assign regions
+    st.dataframe(df)  # Display cleaned DataFrame
+
     # Allow user to select data source
     gdp_source = st.selectbox("Select GDP Data Source:", ["IMF", "World Bank", "United Nations"])
 
