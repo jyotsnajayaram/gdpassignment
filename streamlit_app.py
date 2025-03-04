@@ -1,14 +1,8 @@
-# -*- coding: utf-8 -*-
-"""streamlit_app_debug_v3"""
-
 import streamlit as st
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-import os
-
-# Use a writable path in Streamlit Cloud
-debug_file_path_v3 = "/tmp/debug_output.txt"  # Change to /tmp/ to avoid permission issues
+import plotly.express as px  # Import Plotly for visualization
 
 # Function to scrape GDP data with improved parsing
 @st.cache_data
@@ -18,39 +12,25 @@ def get_gdp_data():
     soup = BeautifulSoup(response.text, 'html.parser')
     tables = soup.find_all('table', {'class': 'wikitable'})
 
-    # Debug: Show number of tables found
     st.write(f"Number of tables found: {len(tables)}")
 
     if not tables:
         st.error("No tables found on Wikipedia page.")
         return pd.DataFrame()
 
-    # Select the first table (adjust if needed)
     table = tables[0]
-
-    # Read table into pandas DataFrame
     df = pd.read_html(str(table))[0]
 
-    # Debug: Show raw extracted DataFrame
     st.write("Extracted raw DataFrame:", df.head())
 
-    # Ensure correct column names (adapt to any changes in Wikipedia's table format)
-    expected_columns = ['Country/Territory', 'IMF', '_IMF_Year', 'World Bank', '_WB_Year', 'United Nations', '_UN_Year']
-    if len(df.columns) >= len(expected_columns):
-        df.columns = expected_columns
-        df = df[['Country/Territory', 'IMF', 'World Bank', 'United Nations']]  # Keep only relevant columns
-    else:
-        st.error("Unexpected table structure. Check extracted columns:", df.columns)
-        return pd.DataFrame()
+    df.columns = ['Country/Territory', 'IMF', '_IMF_Year', 'World Bank', '_WB_Year', 'United Nations', '_UN_Year']
+    df = df[['Country/Territory', 'IMF', 'World Bank', 'United Nations']]
 
-    # Drop rows where 'Country/Territory' is missing (these are header artifacts)
     df = df.dropna(subset=['Country/Territory'])
 
-    # Convert GDP values to numeric (handling non-numeric cases gracefully)
     for col in ['IMF', 'World Bank', 'United Nations']:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
-    # Debug: Show cleaned DataFrame
     st.write("Cleaned DataFrame:", df.head())
 
     return df
@@ -58,18 +38,26 @@ def get_gdp_data():
 # Streamlit UI
 st.title("Global GDP Visualization - Improved Debug Mode")
 
-# Get data
 df = get_gdp_data()
 
 if df.empty:
     st.error("No data extracted. Check debugging info above.")
 else:
     st.success("Data successfully extracted!")
-    st.dataframe(df)  # Display cleaned DataFrame
+    st.dataframe(df)  # ✅ Display cleaned DataFrame
 
-# Save the improved debugging script
-with open(debug_file_path_v3, "w", encoding="utf-8") as file:
-    file.write(__file__)  # Save this script for reference
+    # ✅ Insert Plotly Visualization Here
+    df_sorted = df.sort_values(by="IMF", ascending=False).head(10)  # Top 10 economies
+    df_melted = df_sorted.melt(id_vars=["Country/Territory"], 
+                               value_vars=["IMF", "World Bank", "United Nations"], 
+                               var_name="Source", value_name="GDP")
 
-# Return the new debug script file path for the user
-debug_file_path_v3
+    fig = px.bar(df_melted, 
+                 x="Country/Territory", 
+                 y="GDP", 
+                 color="Source", 
+                 title="Stacked Bar Plot of GDP by Country (IMF, World Bank, UN)", 
+                 labels={"GDP": "GDP (in millions)", "Country/Territory": "Country"}, 
+                 barmode="stack")
+
+    st.plotly_chart(fig)  # ✅ Display the Plotly figure
