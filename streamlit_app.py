@@ -174,10 +174,6 @@ conf.get_default().auth_token = "2tjpGMZXMCMlFPLTAxDXTRG9IXK_3YJZNS7stsxCAugRJ7h
 # Use ngrok to open a tunnel for the Streamlit app
 public_url = ngrok.connect(8501) # Changed '8501' to 8501
 
-
-# Run the Streamlit app in the background
-!streamlit run app.py &
-
 # Kills previous tunnels (optional, you can keep this)
 # Install necessary packages if not already installed
 !pip install streamlit pyngrok
